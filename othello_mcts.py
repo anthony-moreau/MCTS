@@ -1,10 +1,11 @@
 import numpy as np
 from collections import defaultdict
 import othello_rules as rules
+import plotly.graph_objs as go
 
 
 class MonteCarloTreeSearchNode:
-    def __init__(self, state, parent=None, parent_action=None):
+    def __init__(self, state, simulation_no=100, c_param=0.1, parent=None, parent_action=None):
         self.state = state
         self.parent = parent
         self.parent_action = parent_action
@@ -15,6 +16,8 @@ class MonteCarloTreeSearchNode:
         self._results[-1] = 0
         # self._untried_actions = None
         self._untried_actions = self.untried_actions()
+        self.simulation_no = simulation_no
+        self.c_param = c_param
 
     def untried_actions(self):
 
@@ -32,9 +35,8 @@ class MonteCarloTreeSearchNode:
     def expand(self):
         action = self._untried_actions.pop()
         next_state = self.state.move(action)
-        child_node = MonteCarloTreeSearchNode(
-            next_state, parent=self, parent_action=action)
-
+        child_node = MonteCarloTreeSearchNode(next_state, simulation_no=self.simulation_no, c_param=self.c_param,
+                                              parent=self, parent_action=action)
         self.children.append(child_node)
         return child_node
 
@@ -60,8 +62,9 @@ class MonteCarloTreeSearchNode:
     def is_fully_expanded(self):
         return len(self._untried_actions) == 0
 
-    def best_child(self, c_param=0.1):
-
+    def best_child(self, c_param=None):
+        if c_param is None:
+            c_param = self.c_param
         choices_weights = [(c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children]
         return self.children[np.argmax(choices_weights)]
 
@@ -81,36 +84,55 @@ class MonteCarloTreeSearchNode:
         return current_node
 
     def best_action(self):
-        simulation_no = 100
-
-        for i in range(simulation_no):
+        for i in range(self.simulation_no):
             v = self._tree_policy()
             reward = v.rollout()
             v.backpropagate(reward)
-
         return self.best_child(c_param=0.)
 
 
-def MCTS(initial_state):
-    root = MonteCarloTreeSearchNode(state=initial_state)
+def MCTS(initial_state, simulation_no=100, c_param = 0.01):
+    root = MonteCarloTreeSearchNode(state=initial_state, simulation_no=simulation_no, c_param=c_param)
     selected_node = root.best_action()
     return selected_node
 
 
-def simulate_game():
+def simulate_game(simulation_no_J1=100, c_param_J1=0.01, random_side_1=False, simulation_no_J2=100, c_param_J2=0.01,
+                  random_side_2 = False):
     game_state = rules.State()
     while not game_state.is_game_over():
-        game_state = game_state.move(MCTS(game_state).parent_action)
-    if game_state.game_result() == 1:
-        print("side 2 wins")
+        if game_state.side == 1:
+            if random_side_1:
+                possible_moves =game_state.get_legal_actions()
+                game_state = game_state.move(possible_moves[np.random.randint(len(possible_moves))])
+            else:
+                game_state = game_state.move(
+                    MCTS(game_state, simulation_no=simulation_no_J1, c_param=c_param_J1).parent_action)
+        else:
+            if random_side_2:
+                possible_moves = game_state.get_legal_actions()
+                game_state = game_state.move(possible_moves[np.random.randint(len(possible_moves))])
+            else:
+                game_state = game_state.move(
+                    MCTS(game_state, simulation_no=simulation_no_J2, c_param=c_param_J2).parent_action)
+    print(game_state)
+    result = game_state.game_result()
+    print(result)
+    if result == 1:
+        return game_state.master_side
+    elif result == -1:
+        return 3 - game_state.master_side
     else:
-        print("side 1 wins")
+        return 0
 
 
-grid = [6 * [0] for i in range(6)]
-grid[2][2] = 1
-grid[2][3] = 2
-grid[3][2] = 2
-grid[3][3] = 1
+simulation_amount = [1, 100]
+n_repeat = 10
 
-simulate_game()
+results = []
+
+for c_param in [0.1, 1, 2]:
+    print(f"current c parameter: {c_param}")
+    results.append([simulate_game(c_param_J2=c_param) for _ in range(n_repeat)])
+
+print(results)

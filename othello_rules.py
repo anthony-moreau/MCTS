@@ -2,7 +2,7 @@ import numpy as np
 import copy as cp
 
 DIRECTIONS = [np.array((0, 1)), np.array((1, 0)), np.array((1, 1)),
-              np.array((0, -1)), np.array((-1, 0)), np.array((-1, -1)), np.array((1,-1)), np.array((-1,1))]
+              np.array((0, -1)), np.array((-1, 0)), np.array((-1, -1)), np.array((1, -1)), np.array((-1, 1))]
 
 
 class State:
@@ -144,14 +144,14 @@ def apply_move(state, move):
         state.previous_skip = True
 
 
-def explore_all_possible_games(state:State):
+def explore_all_possible_games(state: State):
     moves = state.get_legal_actions()
     for move in moves:
         explore_all_possible_games(state.move(move))
 
 
 def get_winning_side(grid, master_side):
-    side_count = {1:0, 2:0}
+    side_count = {1: 0, 2: 0}
     for line in grid:
         for tile in line:
             if tile:
@@ -175,11 +175,10 @@ def position_can_claim(grid: list[list[int]], source: np.ndarray):
     other_side = 3 - disk_side
     for vector in DIRECTIONS:
         new_pos = source + vector
-        if new_pos[0] < len(grid) and new_pos[1] < len(grid[0]) and grid[new_pos[0]][new_pos[1]] == other_side:
-            while 0 < new_pos[0] < len(grid) and 0 < new_pos[1] < len(grid[0]) \
-                    and grid[new_pos[0]][new_pos[1]] == other_side:
+        if position_in_grid(grid, new_pos) and grid[new_pos[0]][new_pos[1]] == other_side:
+            while position_in_grid(grid, new_pos) and grid[new_pos[0]][new_pos[1]] == other_side:
                 new_pos += vector
-            if 0 < new_pos[0] < len(grid) and 0 < new_pos[1] < len(grid[0]) and grid[new_pos[0]][new_pos[1]] == 0:
+            if position_in_grid(grid, new_pos) and grid[new_pos[0]][new_pos[1]] == 0:
                 return True
     return False
 
@@ -192,7 +191,6 @@ def is_game_over(grid, side, previous_skip):
                 return False
         return True
     return False
-
 
 # Othello default grid
 # grid = [8 * [0] for i in range(8)]
