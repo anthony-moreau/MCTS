@@ -205,8 +205,3 @@ def is_game_over(grid, side, previous_skip):
 # grid[2][3] = 2
 # grid[3][2] = 2
 # grid[3][3] = 1
-
-# faulty_grid = [[0, 0, 0, 0, 0, 0], [0, 2, 2, 2, 2, 0], [0, 2, 2, 2, 2, 2], [0, 2, 1, 1, 2, 2], [0, 2, 1, 1, 2, 2], [0, 2, 2, 2, 2, 2]]
-#
-# print(get_claimable_positions_from(faulty_grid, np.array((3,2))))
-# print("hello")
